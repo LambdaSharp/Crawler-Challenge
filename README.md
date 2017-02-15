@@ -55,6 +55,9 @@ Modify `Function.cs` to find up to 10 links on the downloaded page, and enqueue 
 3. Only process URL's that match the domain of the original link, do not start crawling other sites!
 4. Make sure to insert new links with a lower `Depth` value so that the computation stops eventually!
 
+**ACCEPTANCE TEST**: You should see a lot more than 1 URL with its corresponding word count in DynamoDB
+**ACCEPTANCE TEST**: The computation ends as expected and your credit score does not plummet.
+
 ## Boss Level: Determine the page with the most back links
 
 If you have completed all other levels, then this challenge is for you. Figure out the most popular page, wich is defined as the page with the most links pointing to it.
