@@ -37,7 +37,7 @@ We are ready to trigger a simple crawl! I have provided a script for easily star
 
 *Note*: `USAGE: ./crawl.sh {table_name} {url} {depth}`
 
-**ACCEPTANCE TEST**: You are able to verify that the URL and Depth is printed out by the lambda function by check CloudWatch Logs.
+**ACCEPTANCE TEST**: You are able to verify that the URL and Depth is printed out by the lambda function by checking the CloudWatch Logs.
 
 ## Level 2: Count the words
 
