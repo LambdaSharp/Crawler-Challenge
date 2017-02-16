@@ -1,4 +1,4 @@
- Build a Serverless .NET Core Web Crawler using DynamoDB
+# Build a Serverless .NET Core Web Crawler using DynamoDB
 
 In this challenge we're going to learn how to write a scalable web crawler using [AWS Lambda](https://aws.amazon.com/lambda/) and AWS [DynamoDB](https://aws.amazon.com/dynamodb/). The purpose of this simple crawler will be to simply count the words on every page that it encounters. 
 
