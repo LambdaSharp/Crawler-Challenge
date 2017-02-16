@@ -1,10 +1,10 @@
 using System.Collections.Generic;
 using System.Text.RegularExpressions;
-using System;
+using System.Linq;
 
 namespace CrawlerFunction {
 
-    static class HelperFunctions {
+    internal static class HelperFunctions {
 
         //--- Class Fields ---
         private static Regex aTagRegex = new Regex("(<a.*?>.*?</a>)", RegexOptions.Singleline | RegexOptions.Compiled);
@@ -12,7 +12,7 @@ namespace CrawlerFunction {
         private static Regex htmlTag = new Regex("<[^>]+>", RegexOptions.IgnoreCase | RegexOptions.Compiled);
 
         //--- Class Methods ---
-        public static IEnumerable<string> FindLinks(string html) {
+        public static IEnumerable<string> FindLinks(string html, int maxLinks) {
             var list = new List<string>();
             var m1 = aTagRegex.Matches(html);
             foreach(Match m in m1) {
@@ -23,7 +23,7 @@ namespace CrawlerFunction {
                     list.Add(href);
                 }
             }
-            return list;
+            return list.Take(maxLinks);
         }
 
         public static int CountWords(string html) {

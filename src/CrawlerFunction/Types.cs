@@ -1,9 +1,24 @@
 
+using System;
 using Newtonsoft.Json;
 
 namespace CrawlerFunction {
 
     //--- Types ---
+
+    public struct UrlInfo {
+
+        //--- Fields ---
+        public readonly Uri Url;
+        public readonly int Depth;
+
+            //--- Constructors ---
+        public UrlInfo(Uri url, int depth) {
+            this.Url = url;
+            this.Depth = depth;
+        }
+    }
+
     public class DynamoDbUpdate {
 
         public class DynamoDbRecord {
