@@ -10,7 +10,7 @@ We will kick off our crawler by inserting a link into DynamoDB, which will trigg
     1. Sign-up for an [AWS account](https://aws.amazon.com)
     2. Install [AWS CLI](https://aws.amazon.com/cli/)
 2. .NET Core
-    1. Install [.NET Core 1.0](https://www.microsoft.com/net/core)
+    1. Install [.NET Core 1.0](https://www.microsoft.com/net/core) **(NOTE: You MUST install 1.0. Do NOT install 1.1 or later!)**
     2. Install [Visual Studio Code](https://code.visualstudio.com/)
     3. Install [C# Extension for VS Code](https://code.visualstudio.com/Docs/languages/csharp)
 3. AWS C# Lambda Tools
