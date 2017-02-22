@@ -15,28 +15,41 @@ namespace CrawlerFunction {
 
     public class Function {
 
-        //--- Constants ---
         private const int LINKS_PER_PAGE = 10;
         private const string TABLE_NAME = "lambda_sharp_crawler";
 
+        //--- Types ---
+        public struct UrlInfo {
+
+            //--- Fields ---
+            public readonly Uri Url;
+            public readonly int Depth;
+
+            //--- Constructors ---
+            public UrlInfo(Uri url, int depth) {
+                this.Url = url;
+                this.Depth = depth;
+            }
+        }
+
         //--- Fields ---
+        private readonly IAmazonDynamoDB _client;
+
 
         //--- Constructors ---
         public Function() {
+            _client = new AmazonDynamoDBClient();
         }
 
         //--- Methods ---
         public string Handler(DynamoDbUpdate update, ILambdaContext context) {
-
-            // only process events that are insering records
             foreach(var record in update.Records.Where(r => "INSERT".Equals(r.EventName))) {
                 var urlInfo = record.Details.NewValues;
-
-                // a url and depth are required
                 if(urlInfo.CrawlerDepth == null || urlInfo.CrawlerUrl == null) {
                     continue;
                 }
                 ProcessUrl(new UrlInfo(new Uri(urlInfo.CrawlerUrl.Value), urlInfo.CrawlerDepth.Value)).Wait();
+                
             }
             return null;
         }
@@ -49,26 +62,76 @@ namespace CrawlerFunction {
                 return;
             }
 
-            // LEVEL 1: get this to print :)
-            Console.WriteLine($"Processing URL '{urlInfo.Url}' with depth {urlInfo.Depth}");
+            // download the webpage
+            var httpClient = new HttpClient();
+            var response = await httpClient.GetAsync(urlInfo.Url);
+            var strContents = await response.Content.ReadAsStringAsync();
 
-            // LEVEL 2:
-            // 1. Download the webpage
-            // 2. Count the words on the page (see HelpFunctions.CountWords)
-            // 3. Store the word count back into DynamoDB under a separate column
+            // get the word count from the HTML
+            var wordCount = HelperFunctions.CountWords(strContents);
+
+            // update the record to reflect the word count
+            await _client.UpdateItemAsync(TABLE_NAME, 
+                new Dictionary<string, AttributeValue>() {
+                    { "crawlerurl", new AttributeValue { S = urlInfo.Url.ToString() }}
+                }, 
+                new Dictionary<string, AttributeValueUpdate>() {
+                    { "word_count", new AttributeValueUpdate { Action = "PUT", Value = new AttributeValue { N = wordCount.ToString() }} }
+                }
+            );
 
             // only enqueue child links if depth is greater than 1
             if(urlInfo.Depth > 1) {
-                
-                // LEVEL 3:
-                // 1. Parse all links out of the page content (see HelpFunctions.FindLinks) -> Plase use LINKS_PER_PAGE to limit the number of links you will be processing per page
-                // 2. For each link, determine if it is pointing to the same domain as the original link, we do not want to be crawling other sites!
-                // 3. If it is, insert it back into DynamoDB for further processing. (NOTE: ensure to store it back with a lower Depth! Otherwise the computation will continue indefinitely!!!)
+                var foundLinks = new List<Uri>();
+                foreach(var link in HelperFunctions.FindLinks(strContents)) {
 
+                    // check that link is in the same domain
+                    var llink = link;
+                    if(llink.StartsWith("//")) {
+
+                        // append the scheme
+                        llink = $"{urlInfo.Url.Scheme}:{llink}";
+                    }
+                    if(llink.StartsWith("/")) {
+                        llink = $"{urlInfo.Url.Scheme}://{urlInfo.Url.Host}{llink}";
+                    }
+                    Uri parsedLink = null;
+                    try {
+                        parsedLink = new Uri(llink); 
+                    } catch { 
+                        continue;
+                    }
+
+                    // ignore external urls
+                    if(!parsedLink.Host.Equals(urlInfo.Url.Host)) {
+                        continue;
+                    }
+                    foundLinks.Add(parsedLink);
+                }
+
+                Console.WriteLine($"Found {foundLinks.Count} links, only using {LINKS_PER_PAGE}");
+
+                // perform a batch get so that we don't insert duplicate links
+                var putRequests = new List<PutItemRequest>(foundLinks.Count);
+                foreach(var link in foundLinks.Take(LINKS_PER_PAGE)) {
+                    var putRequest = new PutItemRequest {
+                        TableName = TABLE_NAME,
+                        Item = new Dictionary<string, AttributeValue>() {
+                            { "crawlerurl", new AttributeValue { S = link.ToString() }},
+                            { "crawlerdepth", new AttributeValue { N = (urlInfo.Depth - 1).ToString() }},
+                        },
+
+                        // this is to prevent insertion of duplicate links
+                        ConditionExpression = "attribute_not_exists(crawlerurl)"
+                    };
+                    putRequests.Add(putRequest);
+                }
+                foreach(var request in putRequests) {
+                    try {
+                        await _client.PutItemAsync(request);
+                    } catch(ConditionalCheckFailedException) { /* */ }
+                }
             }
-
-            // LEVEL _BOSS_:
-            // Determine the most popular page by finding the page with the most number of backlinks
         }
     } 
 }
