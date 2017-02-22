@@ -31,11 +31,16 @@ Let's deploy our crawler function.
 
 3. From the DynamoDB table set-up a trigger that will execute the deployed lambda function. I suggest using a `Batch Size` of `10`.
 
-We are ready to trigger a simple crawl! I have provided a script for easily starting a crawl:
+We are ready to trigger a simple crawl! 
 
-`./crawl.sh lambda_sharp_crawler https://en.wikipedia.org/wiki/Lambda 2`
+Insert the following values into `DynamoDB` through the AWS console: 
 
-*Note*: `USAGE: ./crawl.sh {table_name} {url} {depth}`
+```
+{
+  "crawlerurl": "https://en.wikipedia.org/wiki/Levenshtein_distance",
+  "crawlerdepth": 3
+}
+```
 
 **ACCEPTANCE TEST**: You are able to verify that the URL and Depth is printed out by the lambda function by checking the CloudWatch Logs.
 
